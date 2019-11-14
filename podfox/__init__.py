@@ -9,6 +9,7 @@ Usage:
     podfox.py episodes <shortname> [-c=<path>]
     podfox.py download [<shortname> --how-many=<n>] [-c=<path>]
     podfox.py rename <shortname> <newname> [-c=<path>]
+    podfox.py delete <shortname> [-c=<path>]
 
 Options:
     -c --config=<path>    Specify an alternate config file [default: ~/.podfox.json]
@@ -29,6 +30,7 @@ import os.path
 import requests
 import sys
 import re
+import shutil
 
 # RSS datetimes follow RFC 2822, same as email headers.
 # this is the chain of stackoverflow posts that led me to believe this is true.
@@ -144,6 +146,11 @@ class PodFox(object):
         print('imported ' +
             Fore.GREEN + feed['title'] + Fore.RESET + ' with shortname ' +
             Fore.BLUE + feed['shortname'] + Fore.RESET)
+
+    def delete_feed(self, feed):
+        folder = self.get_folder(feed['shortname'])
+        if os.path.exists(folder):
+            shutil.rmtree(folder)
 
     def update_feed(self, feed):
         '''
@@ -310,13 +317,10 @@ class PodFox(object):
 def main():
     colorama.init()
     arguments = docopt(__doc__, version='p0d 0.01')
-    # before we do anything with the commands,
-    # find the configuration file
 
     podfox = PodFox()
     podfox.parse_config(arguments["--config"])
 
-    #handle the commands
     if arguments['import']:
         if arguments['<shortname>'] is None:
             podfox.import_feed(arguments['<feed-url>'])
@@ -371,11 +375,20 @@ def main():
         #download episodes for all feeds.
         else:
             for feed in podfox.available_feeds():
-                podfox.download_multiple(feed,  maxnum)
+                podfox.download_multiple(feed, maxnum)
             exit(0)
 
     if arguments['rename']:
         podfox.rename(arguments['<shortname>'], arguments['<newname>'])
+
+    if arguments['delete']:
+        feed = podfox.find_feed(arguments['<shortname>'])
+        if feed:
+            podfox.delete_feed(feed)
+            exit(0)
+        else:
+            print_err("feed {} not found".format(arguments['<shortname>']))
+            exit(-1)
 
 
 if __name__ == '__main__':
