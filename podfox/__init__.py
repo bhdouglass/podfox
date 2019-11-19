@@ -202,7 +202,8 @@ class PodFox(object):
                             'url':        link.href,
                             'downloaded': False,
                             'listened':   False,
-                            'published':  date
+                            'published':  date,
+                            'filename':   None,
                             })
         return episodes
 
@@ -214,8 +215,9 @@ class PodFox(object):
             if maxnum == 0:
                 break
             if not episode['downloaded']:
-                self.download_single(feed['shortname'], episode['url'])
+                filename = self.download_single(feed['shortname'], episode['url'])
                 episode['downloaded'] = True
+                episode['filename'] = filename
                 maxnum -= 1
         self.overwrite_config(feed)
 
@@ -233,6 +235,7 @@ class PodFox(object):
             for chunk in r.iter_content(chunk_size=1024**2):
                 f.write(chunk)
         print("done.")
+        return filename
 
     def available_feeds(self):
         '''
@@ -312,6 +315,23 @@ class PodFox(object):
         self.CONFIGURATION = CONFIGURATION_DEFAULTS.copy()
         self.CONFIGURATION.update(userconf)
         self.CONFIGURATION['podcast-directory'] = os.path.expanduser(self.CONFIGURATION['podcast-directory'])
+
+    # TODO add a unique id for each episode so this is less brittle
+    def mark_episode_listened(self, feed, episode_title):
+        for episode in feed['episodes']:
+            if episode['title'] == episode_title:
+                episode['listened'] = True
+
+                if 'filename' in episode and episode['filename']:
+                    path = os.path.join(
+                        self.CONFIGURATION['podcast-directory'],
+                        feed['shortname'],
+                        episode['filename'],
+                    )
+                    if os.path.exists(path):
+                        os.unlink(path)
+
+        self.overwrite_config(feed)
 
 
 def main():
