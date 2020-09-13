@@ -333,6 +333,13 @@ class PodFox(object):
 
         self.overwrite_config(feed)
 
+    def unmark_episode_listened(self, feed, episode_title):
+        for episode in feed['episodes']:
+            if episode['title'] == episode_title:
+                episode['listened'] = False
+
+        self.overwrite_config(feed)
+
 
 def main():
     colorama.init()
