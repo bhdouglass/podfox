@@ -321,6 +321,7 @@ class PodFox(object):
         for episode in feed['episodes']:
             if episode['title'] == episode_title:
                 episode['listened'] = True
+                episode['downloaded'] = False
 
                 if 'filename' in episode and episode['filename']:
                     path = os.path.join(
@@ -330,6 +331,8 @@ class PodFox(object):
                     )
                     if os.path.exists(path):
                         os.unlink(path)
+
+                    episode['filename'] = None
 
         self.overwrite_config(feed)
 
